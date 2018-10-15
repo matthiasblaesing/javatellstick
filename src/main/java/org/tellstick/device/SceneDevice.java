@@ -1,6 +1,9 @@
 package org.tellstick.device;
 
 import org.tellstick.JNA;
+import org.tellstick.device.SupportedMethodsException;
+import org.tellstick.device.TellstickDevice;
+import org.tellstick.device.TellstickException;
 
 public class SceneDevice extends TellstickDevice{
 
