@@ -9,6 +9,8 @@
 package org.tellstick;
 
 
+import com.sun.jna.Callback;
+import com.sun.jna.Function;
 import org.tellstick.device.SupportedMethodsException;
 
 import com.sun.jna.Library;
@@ -16,7 +18,7 @@ import com.sun.jna.Memory;
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
 import com.sun.jna.Pointer;
-import com.sun.jna.win32.StdCallLibrary.StdCallCallback;
+import java.util.Collections;
 
 /**
  * This Class is the heart of TellstickDUO Java version.
@@ -39,8 +41,6 @@ import com.sun.jna.win32.StdCallLibrary.StdCallCallback;
  * 
  */
 public class JNA {
-	public static String library = null;
-
 	/**
 	 * Interface that extends the library.
 	 * 
@@ -49,8 +49,10 @@ public class JNA {
 	 * 
 	 */
 	public interface CLibrary extends Library {
-
-		CLibrary INSTANCE = (CLibrary) Native.loadLibrary((library), CLibrary.class);
+		CLibrary INSTANCE = (CLibrary) Native.loadLibrary(
+                        (Platform.isWindows() || Platform.isMac()) ? "TelldusCore" : "telldus-core",
+                        CLibrary.class,
+                        Platform.isWindows() ? Collections.singletonMap(Library.OPTION_CALLING_CONVENTION, Function.ALT_CONVENTION) : Collections.EMPTY_MAP);
 
 		/**
 		 * 
@@ -64,7 +66,7 @@ public class JNA {
 	
 		// typedef void (WINAPI *TDDeviceEvent)(int deviceId, int method, const
 		// char *data, int callbackId, void *context);
-		interface TDDeviceEvent extends StdCallCallback {
+		interface TDDeviceEvent extends Callback {
 			void invoke(int deviceId, int method, Pointer data, int callbackId, Pointer context)
 					throws SupportedMethodsException;
 		}
@@ -73,7 +75,7 @@ public class JNA {
 		// eventFunction, void *context );
 		public int tdRegisterDeviceEvent(TDDeviceEvent eventFunction, Pointer context);
 
-		interface TDSensorEvent extends StdCallCallback {
+		interface TDSensorEvent extends Callback {
 			void invoke(String protocol, String model, int deviceId, int dataType, Pointer value, int timeStamp,
 					int callbackId, Pointer context) throws SupportedMethodsException;
 		}
@@ -82,7 +84,7 @@ public class JNA {
 
 		// typedef void (WINAPI *TDDeviceChangeEvent)(int deviceId, int
 		// changeEvent, int changeType, int callbackId, void *context);
-		interface TDDeviceChangeEvent extends StdCallCallback {
+		interface TDDeviceChangeEvent extends Callback {
 			void invoke(int deviceId, int changeEvent, int changeType, int callbackId, Pointer context)
 					throws SupportedMethodsException;
 		}
@@ -93,7 +95,7 @@ public class JNA {
 
 		// typedef void (WINAPI *TDRawDeviceEvent)(const char *data, int
 		// controllerId, int callbackId, void *context);
-		interface TDRawDeviceEvent extends StdCallCallback {
+		interface TDRawDeviceEvent extends Callback {
 			void invoke(String data, int controllerId, int callbackId, Pointer context)
 					throws SupportedMethodsException;
 		}
@@ -281,15 +283,6 @@ public class JNA {
 		public final int TELLSTICK_WINDAVERAGE = 32;
 		public final int TELLSTICK_WINDGUST = 64;
 		public final int TELLSTICK_SUCCESS = 0;
-	}
-
-	static {
-		if (Platform.isWindows() || Platform.isMac()) {
-			JNA.library = "TelldusCore";
-		} else {
-			JNA.library = "telldus-core";
-		}
-
 	}
 
 	public static String getPointerValue(Pointer point) {
